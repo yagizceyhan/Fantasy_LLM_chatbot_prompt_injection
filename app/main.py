@@ -6,11 +6,12 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, StrictStr
 
 from app.comparison import compare_players
+from app.gemini import ProviderError, ProviderReply, gemini_provider_from_env
 from app.messages import build_messages
 from app.players import find_player, load_dataset
 from app.validation import validate_message
 
-ChatProvider = Callable[[list[dict[str, str]]], str]
+ChatProvider = Callable[[list[dict[str, str]]], str | ProviderReply]
 
 
 class ChatRequest(BaseModel):
@@ -33,7 +34,7 @@ def create_app(
     dataset = load_dataset()
 
     @application.post("/chat")
-    def chat(request: ChatRequest) -> dict[str, str]:
+    def chat(request: ChatRequest) -> dict[str, object]:
         try:
             message = validate_message(request.message)
         except ValueError as exc:
@@ -70,13 +71,29 @@ def create_app(
                 reply = provider(messages)
         except TimeoutError as exc:
             raise HTTPException(status_code=504, detail="Model timed out.") from exc
+        except ProviderError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+        metadata = None
+        if isinstance(reply, ProviderReply):
+            metadata = reply.metadata
+            reply = reply.text
 
         if not isinstance(reply, str) or not reply.strip():
             raise HTTPException(status_code=502, detail="Model returned an empty reply.")
 
-        return {"reply": reply}
+        result: dict[str, object] = {"reply": reply}
+        if metadata is not None:
+            result["model_metadata"] = metadata
+        return result
 
     return application
 
 
-app = create_app(mode=os.environ.get("CHAT_MODE", "demo"))
+def create_configured_app() -> FastAPI:
+    mode = os.environ.get("CHAT_MODE", "demo")
+    provider = gemini_provider_from_env() if mode == "llm" else None
+    return create_app(provider, mode=mode)
+
+
+app = create_configured_app()
