@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "dataset_type": "real_statistics_snapshot",
+  "as_of_date": "2026-11-20",
+  "as_of_timezone": "Europe/Istanbul",
+  "season": "2026-27",
+  "season_type": "Regular Season",
+  "stat_basis": "per_game",
+  "rounding_decimal_places": 1,
+  "notes": [
+    "Fixed snapshot of the published season averages available on the as-of date. Includes completed games only.",
+    "Statistics come from the season statistics tables, not the fantasy projections.",
+    "NBA position labels are recorded separately from fantasy eligibility. This selection follows the five requested player names and is not an SG-only eligibility list.",
+    "Rounded averages are appropriate for this demo. Apparent ties may result from rounding."
+  ],
+  "players": [
+    {
+      "id": "donovan_mitchell",
+      "name": "Donovan Mitchell",
+      "team": "CLE",
+      "nba_position": "Guard",
+      "games_played": 15,
+      "last_game_date": "2026-11-18",
+      "pts": 24.8,
+      "reb": 4.8,
+      "to": 3.1,
+      "stats_source": "https://www.fsroundup.com/nba-player/donovan-mitchell",
+      "profile_source": "https://www.nba.com/player/1628378/donovan-mitchell"
+    },
+    {
+      "id": "cade_cunningham",
+      "name": "Cade Cunningham",
+      "team": "DET",
+      "nba_position": "Guard",
+      "games_played": 13,
+      "last_game_date": "2026-11-17",
+      "pts": 25.8,
+      "reb": 5.2,
+      "to": 3.1,
+      "stats_source": "https://www.fsroundup.com/nba-player/cade-cunningham",
+      "profile_source": "https://www.nba.com/player/1630595/cade-cunningham"
+    },
+    {
+      "id": "cooper_flagg",
+      "name": "Cooper Flagg",
+      "team": "DAL",
+      "nba_position": "Forward",
+      "games_played": 14,
+      "last_game_date": "2026-11-18",
+      "pts": 24.2,
+      "reb": 6.6,
+      "to": 3.1,
+      "stats_source": "https://www.fsroundup.com/nba-player/cooper-flagg",
+      "profile_source": "https://www.nba.com/player/1642843/cooper-flagg"
+    },
+    {
+      "id": "jayson_tatum",
+      "name": "Jayson Tatum",
+      "team": "BOS",
+      "nba_position": "Forward-Guard",
+      "games_played": 14,
+      "last_game_date": "2026-11-18",
+      "pts": 26.4,
+      "reb": 6.6,
+      "to": 3.1,
+      "stats_source": "https://www.fsroundup.com/nba-player/jayson-tatum",
+      "profile_source": "https://www.nba.com/player/1628369/jayson-tatum"
+    },
+    {
+      "id": "luka_doncic",
+      "name": "Luka Doncic",
+      "team": "LAL",
+      "nba_position": "Forward-Guard",
+      "games_played": 14,
+      "last_game_date": "2026-11-18",
+      "pts": 38.1,
+      "reb": 7.0,
+      "to": 5.1,
+      "stats_source": "https://www.fsroundup.com/nba-player/luka-doncic",
+      "profile_source": "https://www.nba.com/player/1629029/luka-doncic"
+    }
+  ]
+}
