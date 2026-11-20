@@ -19,13 +19,29 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest -v
 ```
 
-The suite contains 23 test cases, with 15 unit cases and eight API integration cases. The unit cases cover message validation, message roles, player lookup, and comparison rules. The API cases cover provider responses and errors, player selection, unknown players, duplicate selections, and the selected data sent to the provider.
+The suite defines 26 test cases, with 17 unit cases and nine API integration cases. The last user-verified baseline was 23 passed on 20 November 2026; the three new mode cases require a fresh run before recording a new pass count. The unit cases cover message validation, message roles, player lookup, comparison rules, and invalid mode configurations. The API cases cover provider responses and errors, the unconfigured LLM mode, player selection, unknown players, duplicate selections, and the selected data sent to the provider. The case-to-rule and technique mapping, including planned tests that are still missing, is in [the test design](testdesign.md#6-local-test-inventory-and-implementation-status).
 
 The tests use controlled provider stubs and a deterministic local comparison. Real-model prompt injection and jailbreak evaluation is planned in [the test design](testdesign.md).
+
+## Working modes
+
+`CHAT_MODE` selects the mode when Uvicorn imports `app.main:app`. The default is `demo`. An unknown mode fails at application creation.
+
+| Mode | Provider | Behavior for a valid comparison |
+| --- | --- | --- |
+| `demo` | None | Compute the comparison in Python and return a reply beginning with `[DEMO]`. |
+| `llm` | Configured | Return the provider's reply without replacing it with a Python recommendation. |
+| `llm` | None | Return HTTP `503` with `LLM provider is not configured.` |
+| `demo` | Supplied | Reject the conflicting configuration with `ValueError`. |
+
+Code that injects a provider must select the mode explicitly: `create_app(provider=provider, mode="llm")`. Tests use this interface with controlled stubs. A real provider adapter and its credentials are not implemented yet, so setting `CHAT_MODE` to `llm` alone does not connect a model.
+
+In LLM mode, timeouts return `504`, and blank or non-string replies return `502`. These outcomes never fall back to the demo. General upstream error mapping is still planned. Request and player validation happen before the provider-configuration check, so invalid input returns `422`, and unknown players return `404` even when the LLM provider is missing.
 
 ## Try the demo
 
 ```powershell
+$env:CHAT_MODE = "demo"
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 

@@ -16,6 +16,7 @@ def test_selected_players_produce_dynamic_demo_reply():
         )
 
     assert response.status_code == 200
+    assert response.json()["reply"].startswith("[DEMO]")
     assert "Recommendation: Cade Cunningham." in response.json()["reply"]
 
 
@@ -23,7 +24,7 @@ def test_unknown_player_skips_provider():
     def provider(_messages):
         pytest.fail("Provider must not run when a player is missing.")
 
-    with TestClient(create_app(provider)) as client:
+    with TestClient(create_app(provider, mode="llm")) as client:
         response = client.post(
             "/chat",
             json={"message": "Compare.", "player_a": "unknown_player"},
@@ -53,7 +54,7 @@ def test_provider_receives_only_selected_player_records():
         calls.append(messages)
         return "Provider reply."
 
-    with TestClient(create_app(provider)) as client:
+    with TestClient(create_app(provider, mode="llm")) as client:
         response = client.post(
             "/chat",
             json={

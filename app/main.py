@@ -1,4 +1,5 @@
 import json
+import os
 from collections.abc import Callable
 
 from fastapi import FastAPI, HTTPException
@@ -18,7 +19,16 @@ class ChatRequest(BaseModel):
     player_b: StrictStr = "cade_cunningham"
 
 
-def create_app(provider: ChatProvider | None = None) -> FastAPI:
+def create_app(
+    provider: ChatProvider | None = None,
+    *,
+    mode: str = "demo",
+) -> FastAPI:
+    if mode not in {"demo", "llm"}:
+        raise ValueError("Mode must be 'demo' or 'llm'.")
+    if mode == "demo" and provider is not None:
+        raise ValueError("Demo mode does not accept a provider. Use mode='llm'.")
+
     application = FastAPI(title="NBA Fantasy Comparison Chatbot")
     dataset = load_dataset()
 
@@ -38,6 +48,9 @@ def create_app(provider: ChatProvider | None = None) -> FastAPI:
         if first["id"] == second["id"]:
             raise HTTPException(status_code=422, detail="Choose two different players.")
 
+        if mode == "llm" and provider is None:
+            raise HTTPException(status_code=503, detail="LLM provider is not configured.")
+
         context = json.dumps(
             {
                 "as_of_date": dataset["as_of_date"],
@@ -51,7 +64,7 @@ def create_app(provider: ChatProvider | None = None) -> FastAPI:
         messages = build_messages(message, context)
 
         try:
-            if provider is None:
+            if mode == "demo":
                 reply = compare_players(first, second)
             else:
                 reply = provider(messages)
@@ -66,4 +79,4 @@ def create_app(provider: ChatProvider | None = None) -> FastAPI:
     return application
 
 
-app = create_app()
+app = create_app(mode=os.environ.get("CHAT_MODE", "demo"))

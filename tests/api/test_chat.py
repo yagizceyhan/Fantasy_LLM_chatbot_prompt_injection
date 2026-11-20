@@ -11,7 +11,7 @@ def test_valid_request_returns_provider_reply():
         calls.append(messages)
         return "Expected provider reply."
 
-    with TestClient(create_app(provider)) as client:
+    with TestClient(create_app(provider, mode="llm")) as client:
         response = client.post("/chat", json={"message": "Compare A and B."})
 
     assert response.status_code == 200
@@ -24,7 +24,7 @@ def test_missing_message_skips_provider():
     def provider(_messages):
         pytest.fail("The provider should not receive an invalid request.")
 
-    with TestClient(create_app(provider)) as client:
+    with TestClient(create_app(provider, mode="llm")) as client:
         response = client.post("/chat", json={})
 
     assert response.status_code == 422
@@ -34,7 +34,7 @@ def test_provider_timeout_returns_504():
     def provider(_messages):
         raise TimeoutError
 
-    with TestClient(create_app(provider)) as client:
+    with TestClient(create_app(provider, mode="llm")) as client:
         response = client.post("/chat", json={"message": "Compare A and B."})
 
     assert response.status_code == 504
@@ -44,7 +44,15 @@ def test_blank_provider_reply_returns_502():
     def provider(_messages):
         return " \t "
 
-    with TestClient(create_app(provider)) as client:
+    with TestClient(create_app(provider, mode="llm")) as client:
         response = client.post("/chat", json={"message": "Compare A and B."})
 
     assert response.status_code == 502
+
+
+def test_unconfigured_provider_returns_503():
+    with TestClient(create_app(mode="llm")) as client:
+        response = client.post("/chat", json={"message": "Compare A and B."})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "LLM provider is not configured."}
