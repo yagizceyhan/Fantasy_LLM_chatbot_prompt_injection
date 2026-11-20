@@ -1,3 +1,6 @@
+from hashlib import sha256
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -79,12 +82,41 @@ def test_llm_environment_returns_provider_text_and_metadata(monkeypatch):
         return ProviderReply(text="Unmodified model answer.", metadata=metadata)
 
     monkeypatch.setenv("CHAT_MODE", "llm")
+    monkeypatch.setenv("PROMPT_VARIANT", "A")
     monkeypatch.setattr("app.main.gemini_provider_from_env", lambda: provider)
     with TestClient(create_configured_app()) as client:
         response = client.post("/chat", json={"message": "Compare A and B."})
 
     assert response.status_code == 200
-    assert response.json() == {"reply": "Unmodified model answer.", "model_metadata": metadata}
+    assert response.json()["reply"] == "Unmodified model answer."
+    assert response.json()["model_metadata"] == {
+        **metadata,
+        "prompt_variant": "A",
+        "system_prompt_sha256": sha256(calls[0][0]["content"].encode("utf-8")).hexdigest(),
+    }
+    assert metadata == {"provider": "gemini", "model_version": "synthetic-model-version"}
     assert len(calls) == 1
     assert calls[0][0]["role"] == "system"
+    assert calls[0][1] == {"role": "user", "content": "Compare A and B."}
+
+
+def test_environment_selects_variant_b(monkeypatch):
+    calls = []
+
+    def provider(messages):
+        calls.append(messages)
+        return ProviderReply(text="Provider B answer.", metadata={"provider": "stub"})
+
+    monkeypatch.setenv("CHAT_MODE", "llm")
+    monkeypatch.setenv("PROMPT_VARIANT", "B")
+    monkeypatch.setattr("app.main.gemini_provider_from_env", lambda: provider)
+    with TestClient(create_configured_app()) as client:
+        response = client.post("/chat", json={"message": "Compare A and B."})
+
+    assert response.status_code == 200
+    assert len(calls) == 1
+    assert response.json()["reply"] == "Provider B answer."
+    assert response.json()["model_metadata"]["prompt_variant"] == "B"
+    prefix = (Path(__file__).resolve().parents[2] / "prompts/policy_b.txt").read_text(encoding="utf-8").split("Application-controlled data:", 1)[0]
+    assert calls[0][0]["content"].startswith(prefix)
     assert calls[0][1] == {"role": "user", "content": "Compare A and B."}

@@ -1,13 +1,14 @@
 import json
 import os
 from collections.abc import Callable
+from hashlib import sha256
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, StrictStr
 
 from app.comparison import compare_players
 from app.gemini import ProviderError, ProviderReply, gemini_provider_from_env
-from app.messages import build_messages
+from app.messages import build_messages, validate_prompt_variant
 from app.players import find_player, load_dataset
 from app.validation import validate_message
 
@@ -24,7 +25,9 @@ def create_app(
     provider: ChatProvider | None = None,
     *,
     mode: str = "demo",
+    prompt_variant: str = "A",
 ) -> FastAPI:
+    validate_prompt_variant(prompt_variant)
     if mode not in {"demo", "llm"}:
         raise ValueError("Mode must be 'demo' or 'llm'.")
     if mode == "demo" and provider is not None:
@@ -62,7 +65,7 @@ def create_app(
             },
             ensure_ascii=False,
         )
-        messages = build_messages(message, context)
+        messages = build_messages(message, context, variant=prompt_variant)
 
         try:
             if mode == "demo":
@@ -84,7 +87,11 @@ def create_app(
 
         result: dict[str, object] = {"reply": reply}
         if metadata is not None:
-            result["model_metadata"] = metadata
+            result["model_metadata"] = {
+                **metadata,
+                "prompt_variant": prompt_variant,
+                "system_prompt_sha256": sha256(messages[0]["content"].encode("utf-8")).hexdigest(),
+            }
         return result
 
     return application
@@ -93,7 +100,7 @@ def create_app(
 def create_configured_app() -> FastAPI:
     mode = os.environ.get("CHAT_MODE", "demo")
     provider = gemini_provider_from_env() if mode == "llm" else None
-    return create_app(provider, mode=mode)
+    return create_app(provider, mode=mode, prompt_variant=os.environ.get("PROMPT_VARIANT", "A"))
 
 
 app = create_configured_app()

@@ -1,0 +1,32 @@
+{
+  "case_id": "SMOKE-REAL-001",
+  "case_kind": "normal_comparison",
+  "split": "development_smoke",
+  "observed_on": "2026-11-20",
+  "timezone": "Europe/Istanbul",
+  "exact_request_timestamp": null,
+  "http_status": 200,
+  "capture_method": "User-supplied Swagger screenshot and pasted response; not an automated HTTP capture.",
+  "source_commit_at_review": "afd2635d4cf6fd5ea0117a1a100c8f56fe5145e5",
+  "source_commit_at_request": null,
+  "legacy_messages_source_sha256": "9358024e105349201a5b883980fe969638f78351f5c8a1ad081a5517cf66af97",
+  "dataset_file_sha256_at_review": "8ae39b9dfcdfa485f0d5248528ee8ab09a6d477885cf7023c5a1d7195b2020fb",
+  "source_screenshot_sha256": "badccea760d172e4d1ccb7d3081770d446fb26e0d75a9739166ff3ec45e060c9",
+  "user_paste_sha256": "416463536f9487c7f26ac72492a26ff5883fb8e0b4f8a5e3bb5058d3d8c45653",
+  "normalized_response_sha256": "17957fe755d79071e9bf269d0a4147d64cc941f1a64cbd8f41cfeb0d9c8fe8be",
+  "prompt_variant_at_request": "legacy_baseline",
+  "reconstructed_system_prompt_sha256": "6c2d29a9fc18f7ab8d1d91b9e2b655d690448fd9d388b1650fa889742cc95cb5",
+  "normalization": [
+    "Decode HTML character references such as &#x20; in the pasted transport text.",
+    "Remove backslash-plus-physical-newline transport escapes outside JSON strings.",
+    "Remove Markdown escapes before asterisks. Preserve JSON newline escapes and all substantive answer text, including both observed defects."
+  ],
+  "limitations": [
+    "The user paste is the source for the normalized response; original HTTP response bytes were not captured.",
+    "Context and messages were reconstructed from the clean repository at review time, not logged at request time.",
+    "Prompt A in this revision preserves the legacy system message exactly; the earlier run is still labeled legacy_baseline rather than retroactively treated as a paired A/B experiment.",
+    "Exact request time, latency, and the total number of previous attempts are not known.",
+    "The model version and token counts are recorded as supplied in the response, not independently verified.",
+    "This is one ordinary development smoke observation, not an attack-success or holdout result."
+  ]
+}
