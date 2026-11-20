@@ -7,7 +7,7 @@
 | AI element H | Prompt injection and jailbreak test set |
 | League | 16-team head-to-head 9-category fantasy basketball |
 | Initial feature | Compare two players by points (PTS), rebounds (REB), and turnovers (TO) |
-| Status | Deterministic demo and local tests implemented; explicit demo/LLM mode contract added; real-model evaluation planned |
+| Status | Deterministic demo and local tests implemented; explicit demo/LLM modes and Gemini REST adapter implemented; live validation and model evaluation pending |
 
 ## 1. Scope and quality goals
 
@@ -26,12 +26,12 @@ The entry point is `POST /chat`. The JSON body requires a `message` string and o
 
 The system message contains the policy and only the two selected application-controlled player records, together with the snapshot metadata. The user message carries the accepted free text unchanged. A string such as `[SYSTEM]` inside that text stays in the user role. The synthetic marker is a deliberately protected test string. Provider credentials must stay in application configuration outside all model messages. Identical fixtures and markers across prompt variants remain a planned A/B requirement.
 
-`create_app(provider=None, *, mode="demo")` makes the working mode explicit. The module-level application reads `CHAT_MODE`, defaulting to `demo`.
+`create_app(provider=None, *, mode="demo")` makes the working mode explicit. The module-level application calls `create_configured_app()`, reading `CHAT_MODE` (default `demo`). In LLM mode, both `GEMINI_API_KEY` and `GEMINI_MODEL` are required to build the Gemini adapter. No model call occurs at import or startup. The API key is supplied in the HTTP header, outside model messages.
 
 | Configuration or request | Implemented result |
 | --- | --- |
 | Demo mode, no provider | HTTP `200`, with a deterministic Python reply beginning with `[DEMO]`. |
-| LLM mode, configured provider | HTTP `200`, with the nonblank provider reply returned unchanged. Current tests use stubs; there is no real provider adapter yet. |
+| LLM mode, configured provider | HTTP `200`, with the nonblank provider reply returned unchanged. The Gemini adapter is available; local tests use stubs and mock HTTP transport. |
 | LLM mode, no provider, otherwise valid request | HTTP `503`. No demo fallback. |
 | Invalid message or duplicate selection | HTTP `422`, before any provider call. |
 | Unknown player | HTTP `404`, before any provider call. |
@@ -39,7 +39,11 @@ The system message contains the policy and only the two selected application-con
 | Provider returns a blank or non-string reply | HTTP `502`, with no demo fallback. |
 | Unknown mode, or a provider supplied in demo mode | `ValueError` at application creation. |
 
-Request and player checks precede the missing-provider check. The existing API tests cover timeout and blank-string replies; separate tests for non-string replies and the full validation/configuration precedence matrix remain future work. General upstream error mapping to `502` is also planned and is not currently implemented.
+Request and player checks precede the missing-provider check. Gemini HTTP/network, JSON, and unusable-text failures raise `ProviderError` and map to `502`; HTTPX timeout exceptions become `TimeoutError` and map to `504`. Safe error messages distinguish upstream HTTP status numbers and provider content-filter blocks without returning the upstream response body. There are no automatic retries or demo fallbacks. Separate tests for non-string stub replies and the full validation/configuration precedence matrix remain future work.
+
+Gemini replies include `model_metadata`: requested model, returned model version, finish reason, token usage, temperature `0`, and maximum output `2048` tokens. Each HTTPX operation has a `30`-second timeout. Each call has one system instruction and one user message without prior history. Nonblank truncated text is retained with its finish reason, so later evaluation can flag it without discarding potential policy violations. Thought-tagged parts are excluded from the answer. Provider content-filter blocks are not evidence of system-prompt resistance.
+
+The initial model is `gemini-3.5-flash-lite`; Google's [pricing](https://ai.google.dev/gemini-api/docs/pricing/#gemini-3.5-flash-lite) lists free-tier input/output as checked on 20 November 2026. Use a Free Tier project with billing disabled; the model name alone does not enforce a free billing tier. This revision implements the connection but does not claim a successful live call or any experiment result.
 
 Only responses from the configured real model will count as model-behavior evidence. A local demo response, stub response, or application-level rejection such as `404` is not evidence that a model resisted an attack.
 
@@ -122,7 +126,7 @@ In this table, *data ready* means both players have the required values in compa
 
 The user ran the original local suite on **20 November 2026** and supplied a screenshot showing **23 passed, 1 warning in 1.08s**. That baseline comprised 15 unit cases and eight API cases. The warning concerned Starlette/HTTPX use and did not fail that run.
 
-The mode change adds U21, U22, and API08, bringing the defined inventory to **26 cases: 17 unit and nine API**. This new revision has not yet been executed by the user. Record its actual result after running `python -m pytest -v`; do not describe the baseline screenshot as evidence that the added cases passed. A parameterized function contributes one case per parameter set.
+The mode revision defined 26 cases (17 unit and nine API). The Gemini revision adds 16 adapter/configuration unit cases and two API cases, bringing the current inventory to **44 cases: 33 unit and 11 API**. No execution output for this revision has been supplied yet. Record its actual result after running `python -m pytest -v`; the earlier screenshot does not verify the additions. A parameterized function contributes one case per parameter set.
 
 ### 6.1 Implemented unit cases
 
@@ -145,10 +149,26 @@ The mode change adds U21, U22, and API08, bringing the defined inventory to **26
 | U20 | R02 | P4; decision D3, missing statistic | Identify missing TO and omit a complete recommendation. | `tests/unit/test_players.py::test_missing_stat_prevents_full_recommendation` |
 | U21 | R11 | Equivalence partitioning: unsupported mode | Reject an unknown working mode at application creation. | `tests/unit/test_modes.py::test_unknown_mode_is_rejected` |
 | U22 | R11 | Configuration decision: demo plus provider | Reject a provider supplied in demo mode so it cannot be silently ignored. | `tests/unit/test_modes.py::test_demo_mode_rejects_provider` |
+| U23 | R10, R11 | Provider success and trust boundary | Preserve system/user roles, unmodified visible text, model metadata, settings, and header-only authentication. | `tests/unit/test_gemini.py::test_gemini_preserves_roles_reply_and_metadata` |
+| U24a | R11 | HTTP authorization failure | Report upstream `403` once without exposing its body. | `tests/unit/test_gemini.py::test_gemini_http_errors_are_reported_without_retry` (403) |
+| U24b | R11 | HTTP quota/rate-limit failure | Report upstream `429` once without retry. | `tests/unit/test_gemini.py::test_gemini_http_errors_are_reported_without_retry` (429) |
+| U24c | R11 | Upstream service failure | Report upstream `503` once without retry. | `tests/unit/test_gemini.py::test_gemini_http_errors_are_reported_without_retry` (503) |
+| U25 | R11 | Timeout partition | Translate an HTTPX read timeout to `TimeoutError`. | `tests/unit/test_gemini.py::test_gemini_timeout_is_reported` |
+| U26 | R11 | Connection failure partition | Translate a connection failure to `ProviderError`. | `tests/unit/test_gemini.py::test_gemini_connection_failure_is_reported` |
+| U27 | R11 | Invalid JSON partition | Reject a non-JSON upstream response. | `tests/unit/test_gemini.py::test_gemini_invalid_json_is_reported` |
+| U28a | R11 | Missing candidate partition | Report an unusable response with no candidates. | `tests/unit/test_gemini.py::test_gemini_unusable_responses_are_reported` (no candidates) |
+| U28b | R11 | Blank text partition | Report whitespace-only candidate text. | `tests/unit/test_gemini.py::test_gemini_unusable_responses_are_reported` (blank text) |
+| U28c | R11 | Malformed text partition | Reject a non-string candidate text value. | `tests/unit/test_gemini.py::test_gemini_unusable_responses_are_reported` (non-string text) |
+| U29 | R11, R12 | Provider-filter outcome | Identify a provider content-filter block separately from application policy resistance. | `tests/unit/test_gemini.py::test_gemini_provider_block_is_reported` |
+| U30 | R11, R12 | Truncated-answer outcome | Retain partial text and `MAX_TOKENS` metadata for later review. | `tests/unit/test_gemini.py::test_gemini_partial_text_is_preserved_with_finish_reason` |
+| U31 | R10 | Invalid role sequence | Reject an unexpected role order before making a request. | `tests/unit/test_gemini.py::test_gemini_rejects_unexpected_roles_before_request` |
+| U32a | R11 | Missing key configuration | Leave the provider unconfigured when the key is missing. | `tests/unit/test_gemini.py::test_gemini_environment_requires_key_and_model` (missing key) |
+| U32b | R11 | Missing model configuration | Leave the provider unconfigured when the model is missing. | `tests/unit/test_gemini.py::test_gemini_environment_requires_key_and_model` (missing model) |
+| U33 | R10, R11 | Secret separation and lazy initialization | Build from environment without a request and keep the key out of the object's representation. | `tests/unit/test_gemini.py::test_gemini_environment_keeps_key_out_of_repr` |
 
 ### 6.2 Implemented API integration cases
 
-All configured-provider cases explicitly select `mode="llm"` and use controlled stubs. No external model calls are made.
+Configured-provider factory cases explicitly select `mode="llm"`; the environment-wiring case sets `CHAT_MODE=llm`. All use controlled stubs. Adapter unit cases use HTTPX mock transport. No external model calls are made.
 
 | Case | Rule | Technique / design link | Checked behavior | Test function |
 | --- | --- | --- | --- | --- |
@@ -161,6 +181,8 @@ All configured-provider cases explicitly select `mode="llm"` and use controlled 
 | API10 | R02 | Unknown-player partition | Return `404` without calling the provider. This is an application rejection, not a model verdict. | `tests/api/test_player_selection.py::test_unknown_player_skips_provider` |
 | API11 | R02 | Duplicate-selection partition | Return `422` when an ID and a full name resolve to the same player. | `tests/api/test_player_selection.py::test_same_player_under_two_names_is_rejected` |
 | API12 | R01, R06, R10 | Selected-context boundary; role spoofing | Include the selected records in the system message, exclude an unselected player, and preserve the spoofing text in the user role. | `tests/api/test_player_selection.py::test_provider_receives_only_selected_player_records` |
+| API07 | R11 | Upstream error partition | Return `502` with a safe upstream-status detail and no demo fallback. | `tests/api/test_chat.py::test_upstream_error_returns_502` |
+| API13 | R10, R11 | LLM environment configuration | Load the configured provider, preserve roles, and return its exact text plus metadata. | `tests/api/test_chat.py::test_llm_environment_returns_provider_text_and_metadata` |
 
 ### 6.3 Original planned cases and remaining gaps
 
@@ -176,15 +198,15 @@ Original case IDs are retained so planned checks do not disappear when the inven
 | API01, API02, API05, API06 | Implemented | Mapped to the current API functions above. |
 | API03: malformed JSON | Pending | Add an API rejection case that verifies no provider call. |
 | API04: spoofed role remains user text | Covered by API12 | Reuse the existing selected-context case rather than double-counting it. |
-| API07: general upstream error | Pending | Define provider error types, map the expected upstream failures to `502`, and test them. |
-| API08: unconfigured LLM | Implemented in this revision | Applies specifically to LLM mode; default demo remains available. |
+| API07: general upstream error | Implemented | Gemini HTTP/network/response failures use `ProviderError`; API07 checks its `502` mapping. Real service behavior still needs a live run. |
+| API08: unconfigured LLM | Implemented in mode revision | Applies specifically to LLM mode; default demo remains available. |
 | F01-F07 through the API | Pending | Inject test-controlled datasets without accepting trusted statistics from user text. |
 | R02: incompatible periods | Pending | The current demo does not validate period compatibility. U20 checks missing data only. |
 | R04: stated category priority | Pending for LLM | The demo asks for a priority on split advantages but does not interpret free text. |
 | R05-R08: scope and security behavior | Real-model evaluation pending | Message-assembly tests establish the role boundary, not model compliance. |
-| M01-M20 | Planned | Run the real model using the development/holdout split below. |
+| M01-M20 | Planned | Validate a live Gemini call, then implement the runner and scoring records using the development/holdout split below. |
 
-The local suite covers the course's case-count and two-level test structure. It does not establish that the AI element has been validated. The 20 November baseline run supplies the current execution evidence; the mode revision needs a fresh user run, and all real-model results must be collected separately.
+The local suite covers the course's case-count and two-level test structure. It does not establish that the AI element has been validated. The 20 November baseline run supplies the current execution evidence; the mode and Gemini revisions need a fresh user run, and all real-model results must be collected separately.
 
 ## 7. Real model behavior and security cases
 
