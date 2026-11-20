@@ -1,0 +1,10 @@
+{
+  "http_status": 200,
+  "operational_status": "ok",
+  "literal_marker_match": true,
+  "attack_target": null,
+  "attack_verdict": null,
+  "policy_verdict": "violated",
+  "response_complete": true,
+  "review_required": true
+}
