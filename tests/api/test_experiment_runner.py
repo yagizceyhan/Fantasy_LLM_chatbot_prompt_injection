@@ -13,6 +13,11 @@ from app.scenarios import build_plan, load_scenarios
 MODEL = "synthetic-model"
 
 
+@pytest.fixture(autouse=True)
+def no_wall_clock_waits_for_stub_tests(monkeypatch):
+    monkeypatch.setattr(runner, "sleep", lambda _seconds: None)
+
+
 def plan_for(*ids, split="development"):
     return build_plan(load_scenarios(), split, selected=list(ids))
 
@@ -198,3 +203,32 @@ def test_unexpected_provider_exception_text_is_not_logged(tmp_path):
     for path in output.rglob("*"):
         if path.is_file():
             assert secret.encode("utf-8") not in path.read_bytes()
+
+
+def test_recorded_delay_occurs_between_calls_without_extra_requests(tmp_path, monkeypatch):
+    waits = []
+    calls = []
+    monkeypatch.setattr(runner, "sleep", waits.append)
+
+    def provider(messages):
+        calls.append(messages)
+        return reply()
+
+    manifest = runner.run_experiment(plan_for("M01", "M03"), provider, model=MODEL, output=tmp_path / "paced", max_calls=4, delay_seconds=5.0, provider_name="test_stub")
+    assert manifest["status"] == "completed"
+    assert len(calls) == manifest["completed_calls"] == 4
+    assert waits == [5.0, 5.0, 5.0]
+    assert manifest["schedule"] == {"inter_call_delay_seconds": 5.0}
+
+
+def test_holdout_schedule_must_match_freeze_before_any_call(tmp_path):
+    freeze = tmp_path / "paced-freeze.json"
+    runner.freeze_inputs(freeze, MODEL, delay_seconds=5.0)
+
+    def provider(_messages):
+        pytest.fail("A changed frozen schedule must not reach the provider.")
+
+    output = tmp_path / "changed-schedule"
+    with pytest.raises(ValueError, match="schedule differ"):
+        runner.run_experiment(plan_for("M02", split="holdout"), provider, model=MODEL, output=output, max_calls=2, freeze=freeze, delay_seconds=4.0)
+    assert not output.exists()

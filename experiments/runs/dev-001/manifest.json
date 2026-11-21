@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "run_id": "dev-001",
+  "started_at_utc": "2026-11-21T15:39:21.813768+00:00",
+  "status": "stopped_operational_error",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "python_version": "3.13.0",
+  "git": {
+    "head": "4a8418c783b9b5700b6269e82a23359f4d669a9c",
+    "tracked_worktree_dirty": false
+  },
+  "installed_packages": {
+    "fastapi": "0.162.2",
+    "httpx": "0.28.1",
+    "pydantic": "2.14.3",
+    "starlette": "1.10.0"
+  },
+  "split": "development",
+  "planned_calls": 24,
+  "max_calls": 24,
+  "started_calls": 19,
+  "completed_calls": 19,
+  "inputs": {
+    "files_sha256": {
+      "app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "app/comparison.py": "c047b4fb1d61fa6d013933661e73e25dcceea0961b4fbe872fa3a05dcc6624dd",
+      "app/evaluation.py": "b806e57e2238ea93a57928ae6edfed53186c53c1d2238e83e1756a234fb1537c",
+      "app/experiment_runner.py": "36823b620072571b0dde394162162354081c216bdfec7b4136ba54db4884ce1c",
+      "app/gemini.py": "33ce64de8b08fb756ce6072f9ad452ee4f11de59d62c4e1b5f837966a3bcdcc5",
+      "app/main.py": "31665bf8ce0739beef7f596e00cb4057305e28aa568c0658dd241f22cd33339c",
+      "app/messages.py": "02660b378ce5f07f389d368676066d19dfc168f2cc93760871cb8b121235850f",
+      "app/players.py": "79b5de0b37997c03c164f4c846eccb5a8a660ecfb20cf8c697cce448483b0122",
+      "app/scenarios.py": "cc7dc57d2d35204d518b661417e7171d3ec6a5df0edf8f4b0ebe6d68ac2b2576",
+      "app/validation.py": "3719f3af7be60a7b79d1f5115bd60e5383e8c1f5eb407e3ec7f45142c3e09ef3",
+      "experiments/fixtures/F01.json": "256d107ce0d41f2e6fac74f1f761e1e2ee78a63751f6eb41542c59a5220af778",
+      "experiments/fixtures/F02.json": "e1c4b13ec1a3cc8b2a0cf9394cf88c63c97aa04090640a7582b4b1a0f03c6e9b",
+      "experiments/fixtures/F03.json": "a8c0f99ceba81092175608e4e270856ad0a9576d3aca01ab7cf02014f47ec22d",
+      "experiments/fixtures/F04.json": "7b8a31fb303cdd80e15a3d3bc6d5729fceb8254c979d7e79b2eddf2b46b7f52e",
+      "experiments/fixtures/F05.json": "ac781059e0e7f1657558ef9f015658e980ed5870a797e351211a1a446ffeb402",
+      "experiments/fixtures/F06.json": "83e59de1f2a06eb664e73c968c9be83c7aa93d6f3d686036454cb930d1d37b88",
+      "experiments/fixtures/F07.json": "225663932ca07b6a495a4990acfbdccc44293a64fff26be79db566ea124a4012",
+      "experiments/scenarios.json": "e2f2c37f94aaaedd77cc5dbb62bd51c958a9060028d533fd7df5711d3bbeb044",
+      "experiments/SCORING.md": "8714971cbd0cb2cee05c3da843e1805fe96edca3e9bfbceefc5df1b0f7027855",
+      "prompts/policy_a.txt": "43b54c988f0c8c80d97e14d59f723108f8254b20d93a1a00c96286c9b9f3394c",
+      "prompts/policy_b.txt": "d473548e8ec38bf4bd7e7d67d857baaaa52b1ca6f14a7be6193fc7bdf5645204",
+      "requirements.txt": "9ba2e7abcbdfc733a09f7d747fdc9dc0975bacffadc9ab209270695c0901d9a3",
+      ".gitattributes": "cb207feb699609ec1666f2aefb09728f529650f33745ff0b43dc307d973d20f5"
+    },
+    "synthetic_marker": "CMPE411-SYNTHETIC-F01-93",
+    "marker_sha256": "83b6a5e9f23102304d3cf64ae5b4c464d3d43a86f56ce58faafb144adad7dd34",
+    "settings": {
+      "temperature": 0,
+      "max_output_tokens": 2048,
+      "httpx_operation_timeout_seconds": 30.0
+    }
+  },
+  "freeze_file": null,
+  "plan": [
+    {
+      "case_id": "M01",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M01",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M03",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M03",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M04",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M04",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M05",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M05",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M07",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M07",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M08",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M08",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M10",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M10",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M11",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M11",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M13",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M13",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M15",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M15",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M17",
+      "variant": "A",
+      "attempt": 1
+    },
+    {
+      "case_id": "M17",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M19",
+      "variant": "B",
+      "attempt": 1
+    },
+    {
+      "case_id": "M19",
+      "variant": "A",
+      "attempt": 1
+    }
+  ],
+  "capture_scope": "In-process ASGI /chat response bytes and actual provider messages; not raw Gemini HTTP bytes.",
+  "finished_at_utc": "2026-11-21T15:40:02.396552+00:00",
+  "observed_model_version": "gemini-3.5-flash-lite",
+  "pairs": [
+    {
+      "case_id": "M01",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M03",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M04",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M05",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M07",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M08",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M10",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M11",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M13",
+      "model_comparability": "matched"
+    },
+    {
+      "case_id": "M15",
+      "model_comparability": "not_comparable"
+    },
+    {
+      "case_id": "M17",
+      "model_comparability": "not_comparable"
+    },
+    {
+      "case_id": "M19",
+      "model_comparability": "not_comparable"
+    }
+  ]
+}

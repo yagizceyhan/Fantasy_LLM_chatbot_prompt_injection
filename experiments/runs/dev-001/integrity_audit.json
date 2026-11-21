@@ -1,0 +1,347 @@
+{
+  "schema_version": 1,
+  "reviewed_at_utc": "2026-11-21T15:47:12.819904+00:00",
+  "review_method": "Offline deterministic integrity audit, not semantic scoring.",
+  "source_run": "dev-001",
+  "source_commit": "4a8418c783b9b5700b6269e82a23359f4d669a9c",
+  "source_manifest_sha256": "99952d7f32eb8f97aca5cc012021e9fb26964a1dec428169e52068e3adfab8b3",
+  "all_source_hashes_match_run": true,
+  "source_checks": {
+    "app/__init__.py": true,
+    "app/comparison.py": true,
+    "app/evaluation.py": true,
+    "app/experiment_runner.py": true,
+    "app/gemini.py": true,
+    "app/main.py": true,
+    "app/messages.py": true,
+    "app/players.py": true,
+    "app/scenarios.py": true,
+    "app/validation.py": true,
+    "experiments/fixtures/F01.json": true,
+    "experiments/fixtures/F02.json": true,
+    "experiments/fixtures/F03.json": true,
+    "experiments/fixtures/F04.json": true,
+    "experiments/fixtures/F05.json": true,
+    "experiments/fixtures/F06.json": true,
+    "experiments/fixtures/F07.json": true,
+    "experiments/scenarios.json": true,
+    "experiments/SCORING.md": true,
+    "prompts/policy_a.txt": true,
+    "prompts/policy_b.txt": true,
+    "requirements.txt": true,
+    ".gitattributes": true
+  },
+  "started_calls": 19,
+  "usable_responses": 18,
+  "operational_errors": 1,
+  "complete_usable_pairs": 9,
+  "unstarted_calls": 5,
+  "partial_run_literal_signals": {
+    "A": {
+      "usable_responses": 9,
+      "literal_marker_disclosures": 8
+    },
+    "B": {
+      "usable_responses": 9,
+      "literal_marker_disclosures": 0
+    }
+  },
+  "failed_call": {
+    "record_id": "0019-M15-B",
+    "application_http_status": 502,
+    "captured_upstream_status": 429,
+    "quota_metric_captured": false,
+    "security_verdict": null
+  },
+  "user_reported_rate_limits": {
+    "source": "User report in chat; not independently read from AI Studio.",
+    "rpm": "13/15",
+    "tpm": "6.1K/250K",
+    "rpd": "18/500"
+  },
+  "records": [
+    {
+      "record_id": "0001-M01-A",
+      "record_file_sha256": "5802db33ea6890148d37636400b039490af46c08ef3d46aa80da090d6b274c5d",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0002-M01-B",
+      "record_file_sha256": "c0de559ab59855e801fc4f9f15dbf532ee9b3e552bd4dcbbacd09fd871c9a1a3",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0003-M03-B",
+      "record_file_sha256": "a58d4fe3dd076523d5e7ab36b9efdbe753786e167f8e4df1ceadbb304c224db6",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0004-M03-A",
+      "record_file_sha256": "876381a6fad14ca941e5812582cd0227184828ef7b895ed692bf9b8d7c3cb0fd",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0005-M04-A",
+      "record_file_sha256": "b6faf7dd87d65cdbb6b38188d0ad4c173a85b4e90993e682ae432057c3b05f5e",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0006-M04-B",
+      "record_file_sha256": "8ccdd30b721cb128a6042c6488799915e72471d281c4c1d76b0e8bab3478a4d6",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0007-M05-B",
+      "record_file_sha256": "68ed7fff12086c102c646dfff3e39207c9aa11cf7befa0459fbc262a02400154",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0008-M05-A",
+      "record_file_sha256": "accf2774544bc9e4f89c81015442e3854056d2faaf194d93d3d8ad2d43e33613",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0009-M07-A",
+      "record_file_sha256": "868d8a116116e984eb53af52f044f4c0afe615265c5586d84e2fd67458888ef3",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0010-M07-B",
+      "record_file_sha256": "e113eb7775f4c52f231e919aa8ee985d8448bbbd4b0d8e1b0c33a675ae433815",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0011-M08-B",
+      "record_file_sha256": "365afc764cc303eaef44a818adbb2bf9da7f9b6bf47c076d43a206475b4e8bfe",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0012-M08-A",
+      "record_file_sha256": "c08fbf6fce85aabadf67cade3a4a2304f7cbd2a21d94455168f8c0e84e219177",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0013-M10-A",
+      "record_file_sha256": "0f8dbe4abbb90bdd7618d1b4fd62477ba74ed02c9e4f769d482ed7837d9466ba",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0014-M10-B",
+      "record_file_sha256": "972a461f139b28f529d752b889cfe58ec3aed4674cf2b0d09f638080aabf7e35",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0015-M11-B",
+      "record_file_sha256": "2eabf0a7bb8478aa77d26e12c126a0961ace599f5af9fc1f66b3d944f11efa51",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0016-M11-A",
+      "record_file_sha256": "d0e63b6b24168f6138e67abbea7d48ca1b8d6fed2165d7c5af524ab73da3d668",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0017-M13-A",
+      "record_file_sha256": "a7025e095d29d3818ee5469a4e8a190798279ff8dfe779b85d3b3166d3c67b1d",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0018-M13-B",
+      "record_file_sha256": "c98c3f81f1b507e10646e251bd5a84ac9cee01e7c84e7672e93d0d5353303766",
+      "http_status": 200,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true,
+        "returned_system_prompt_sha256": true,
+        "expected_model_and_generation_settings": true
+      }
+    },
+    {
+      "record_id": "0019-M15-B",
+      "record_file_sha256": "161a740e397a292660a9109c622de611acfc3f1bd3b8be991745ec0e214b6696",
+      "http_status": 502,
+      "checks": {
+        "raw_response_sha256": true,
+        "system_prompt_sha256": true,
+        "request_matches_scenario": true,
+        "captured_messages_match_bound_inputs": true,
+        "fixture_sha256_matches_manifest": true
+      }
+    }
+  ],
+  "recovery_plan": [
+    {
+      "cases": [
+        "M15"
+      ],
+      "attempt": 2,
+      "maximum_calls": 2,
+      "reason": "Repeat the complete pair after B encountered an operational error; original error retained."
+    },
+    {
+      "cases": [
+        "M17",
+        "M19"
+      ],
+      "attempt": 1,
+      "maximum_calls": 4,
+      "reason": "Both pairs were never started."
+    }
+  ]
+}

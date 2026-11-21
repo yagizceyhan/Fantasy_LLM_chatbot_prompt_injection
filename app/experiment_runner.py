@@ -7,11 +7,12 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from importlib.metadata import version as package_version
 import json
+from math import isfinite
 from pathlib import Path
 import platform
 import re
 import subprocess
-from time import perf_counter
+from time import perf_counter, sleep
 
 from app.evaluation import evaluate_response
 from app.gemini import MAX_OUTPUT_TOKENS, TEMPERATURE, TIMEOUT_SECONDS
@@ -20,6 +21,7 @@ from app.players import build_player_context, find_player, load_dataset
 from app.scenarios import FIXTURE_DIR, ROOT, build_plan, load_scenarios
 
 SETTINGS = {"temperature": TEMPERATURE, "max_output_tokens": MAX_OUTPUT_TOKENS, "httpx_operation_timeout_seconds": TIMEOUT_SECONDS}
+DEFAULT_DELAY_SECONDS = 5.0
 DIMENSIONS = ("numerical_accuracy", "category_directions", "dominance_or_tie", "user_priority", "data_sufficiency", "marker_protection", "legitimate_task_utility", "overall_task_correctness")
 
 
@@ -66,23 +68,29 @@ def validate_model(model: str) -> None:
         raise ConfigurationError("Use an explicit model ID without a path or URL.")
 
 
-def freeze_inputs(output: Path, model: str, marker: str = TEST_MARKER) -> None:
+def validate_delay_seconds(delay_seconds: float) -> None:
+    if isinstance(delay_seconds, bool) or not isinstance(delay_seconds, (int, float)) or not isfinite(delay_seconds) or not 0 <= delay_seconds <= 60:
+        raise ConfigurationError("Inter-call delay must be a finite number from 0 to 60 seconds.")
+
+
+def freeze_inputs(output: Path, model: str, marker: str = TEST_MARKER, *, delay_seconds: float = DEFAULT_DELAY_SECONDS) -> None:
     validate_model(model)
+    validate_delay_seconds(delay_seconds)
     load_scenarios()
-    freeze = {"schema_version": 1, "frozen_at_utc": timestamp(), "model": model, "inputs": input_snapshot(marker)}
+    freeze = {"schema_version": 2, "frozen_at_utc": timestamp(), "model": model, "inputs": input_snapshot(marker), "schedule": {"inter_call_delay_seconds": delay_seconds}}
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("x", encoding="utf-8", newline="\n") as stream:
         json.dump(freeze, stream, ensure_ascii=False, indent=2)
         stream.write("\n")
 
 
-def check_freeze(path: Path, model: str, snapshot: dict) -> None:
+def check_freeze(path: Path, model: str, snapshot: dict, *, delay_seconds: float = DEFAULT_DELAY_SECONDS) -> None:
     freeze = json.loads(path.read_text(encoding="utf-8"))
-    if freeze.get("schema_version") != 1 or freeze.get("model") != model or freeze.get("inputs") != snapshot:
-        raise ConfigurationError("Frozen inputs/model differ from the current experiment; no call was made.")
+    if freeze.get("schema_version") != 2 or freeze.get("model") != model or freeze.get("inputs") != snapshot or freeze.get("schedule") != {"inter_call_delay_seconds": delay_seconds}:
+        raise ConfigurationError("Frozen inputs/model/schedule differ from the current experiment; no call was made.")
 
 
-def preflight(plan: list[dict], model: str, marker: str, max_calls: int, freeze: Path | None) -> tuple[dict, dict]:
+def preflight(plan: list[dict], model: str, marker: str, max_calls: int, freeze: Path | None, *, delay_seconds: float = DEFAULT_DELAY_SECONDS) -> tuple[dict, dict]:
     validate_model(model)
     validate_marker(marker)
     if not plan or len(plan) % 2 or len({item["case"]["split"] for item in plan}) != 1:
@@ -95,7 +103,7 @@ def preflight(plan: list[dict], model: str, marker: str, max_calls: int, freeze:
     if any(entry["case"]["split"] == "holdout" for entry in plan) and freeze is None:
         raise ConfigurationError("Holdout execution requires a matching --freeze file.")
     if freeze is not None:
-        check_freeze(freeze, model, snapshot)
+        check_freeze(freeze, model, snapshot, delay_seconds=delay_seconds)
     datasets = {}
     for entry in plan:
         fixture = entry["case"]["fixture"]
@@ -121,9 +129,11 @@ def git_revision() -> dict:
 def run_experiment(
     plan: list[dict], provider, *, model: str, output: Path, max_calls: int,
     marker: str = TEST_MARKER, freeze: Path | None = None, provider_name: str = "gemini",
+    delay_seconds: float = DEFAULT_DELAY_SECONDS,
 ) -> dict:
     # All gates run before creating files or invoking the supplied provider.
-    snapshot, datasets = preflight(plan, model, marker, max_calls, freeze)
+    validate_delay_seconds(delay_seconds)
+    snapshot, datasets = preflight(plan, model, marker, max_calls, freeze, delay_seconds=delay_seconds)
     expected_messages = {}
     for entry in plan:
         case = entry["case"]
@@ -147,6 +157,7 @@ def run_experiment(
         "split": plan[0]["case"]["split"], "planned_calls": len(plan), "max_calls": max_calls,
         "started_calls": 0, "completed_calls": 0, "inputs": snapshot,
         "freeze_file": str(freeze) if freeze is not None else None,
+        "schedule": {"inter_call_delay_seconds": delay_seconds},
         "plan": [{"case_id": item["case"]["case_id"], "variant": item["variant"], "attempt": item["attempt"]} for item in plan],
         "capture_scope": "In-process ASGI /chat response bytes and actual provider messages; not raw Gemini HTTP bytes.",
     }
@@ -157,6 +168,8 @@ def run_experiment(
     write_json(manifest_path, manifest)
     try:
         for index, entry in enumerate(plan, start=1):
+            if index > 1 and delay_seconds:
+                sleep(delay_seconds)
             if input_snapshot(marker) != snapshot:
                 manifest["status"] = "stopped_inputs_changed"
                 break
@@ -278,6 +291,7 @@ def main() -> int:
         command.add_argument("--cases", nargs="+")
         command.add_argument("--attempt", type=int, default=1)
         command.add_argument("--marker", default=TEST_MARKER)
+        command.add_argument("--delay-seconds", type=float, default=DEFAULT_DELAY_SECONDS)
         if name == "run":
             command.add_argument("--output", type=Path, required=True)
             command.add_argument("--max-calls", type=int, required=True)
@@ -286,16 +300,19 @@ def main() -> int:
     freezing.add_argument("--output", type=Path, required=True)
     freezing.add_argument("--model", required=True)
     freezing.add_argument("--marker", default=TEST_MARKER)
+    freezing.add_argument("--delay-seconds", type=float, default=DEFAULT_DELAY_SECONDS)
     args = parser.parse_args()
     try:
         if args.command == "freeze":
-            freeze_inputs(args.output, args.model, args.marker)
+            freeze_inputs(args.output, args.model, args.marker, delay_seconds=args.delay_seconds)
             print(f"Frozen inputs saved to {args.output}; no model call made.")
             return 0
         validate_marker(args.marker)
+        validate_delay_seconds(args.delay_seconds)
         plan = build_plan(load_scenarios(), args.split, selected=args.cases, attempt=args.attempt)
         counts = Counter(item["case"]["kind"] for item in plan[::2])
         print(f"{args.split}: {len(plan) // 2} scenarios, {len(plan)} planned calls, attempt {args.attempt}; {dict(counts)}", flush=True)
+        print(f"Inter-call delay: {args.delay_seconds:g} seconds; no automatic retries.", flush=True)
         for index in range(0, len(plan), 2):
             print(f"{plan[index]['case']['case_id']}: {plan[index]['variant']} -> {plan[index+1]['variant']}", flush=True)
         if args.command == "plan":
@@ -310,7 +327,7 @@ def main() -> int:
         provider = gemini_provider_from_env()
         if provider is None:
             raise ConfigurationError("GEMINI_API_KEY and GEMINI_MODEL must be configured in this terminal.")
-        manifest = run_experiment(plan, provider, model=provider.model, output=args.output, max_calls=args.max_calls, marker=args.marker, freeze=args.freeze)
+        manifest = run_experiment(plan, provider, model=provider.model, output=args.output, max_calls=args.max_calls, marker=args.marker, freeze=args.freeze, delay_seconds=args.delay_seconds)
         print(f"{manifest['status']}: {manifest['completed_calls']}/{manifest['planned_calls']} completed; {args.output}")
         return 0 if manifest["status"] == "completed" else 1
     except ConfigurationError as error:

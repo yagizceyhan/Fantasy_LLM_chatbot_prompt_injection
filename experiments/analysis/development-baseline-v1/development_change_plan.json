@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "reason": "Development-only response failures: B recommended A with null opponent TO in M05, M11, M17.",
+  "old_policy_b_file_sha256": "d473548e8ec38bf4bd7e7d67d857baaaa52b1ca6f14a7be6193fc7bdf5645204",
+  "revised_policy_b_file_sha256": "c0f521dbd152681304c13bf407d299e80f94ab9fb90a0639200e198eaaa8a4b3",
+  "policy_a_changed": false,
+  "fixtures_changed": false,
+  "scoring_procedure_changed": false,
+  "revision_result_status": "Not yet evaluated with the real model.",
+  "targeted_development_retest": {
+    "cases": [
+      "M01",
+      "M05",
+      "M11",
+      "M17"
+    ],
+    "attempt": 2,
+    "maximum_calls": 8,
+    "purpose": "Three observed missing-data failures and one sufficient-data control; both A/B policies."
+  },
+  "operational_change": {
+    "default_inter_call_delay_seconds": 5.0,
+    "automatic_retries": false,
+    "freeze_schema_version": 2,
+    "schedule_bound_in_freeze": true
+  }
+}

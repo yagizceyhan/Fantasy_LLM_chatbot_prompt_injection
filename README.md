@@ -19,9 +19,9 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest -v
 ```
 
-The suite defines **102 test cases: 61 unit and 41 API integration cases**. Provider tests use `httpx.MockTransport` or controlled stubs, so `pytest` does not make external model requests or consume API quota. Cases and remaining gaps are mapped in [the test design](testdesign.md#6-local-test-inventory-and-implementation-status).
+The suite defines **108 test cases: 65 unit and 43 API integration cases**. Provider tests use `httpx.MockTransport` or controlled stubs, so `pytest` does not make external model requests or consume API quota. Cases and remaining gaps are mapped in [the test design](testdesign.md#6-local-test-inventory-and-implementation-status).
 
-The user reported `102 passed` for the scenario/runner revision on 21 November 2026 using the command above. The full terminal output was not archived; this is a user-reported local result. The screenshot supplied on 20 November verifies the earlier 23-case baseline. Adapter tests establish local request/response handling, not resistance of a real model to prompt injection.
+The user reported `108 passed` for the schedule/policy revision on 21 November 2026 using the command above. The full terminal output was not archived; this is a user-reported local result. The screenshot supplied on 20 November verifies the earlier 23-case baseline. Adapter tests establish local request/response handling, not resistance of a real model to prompt injection.
 
 ## Working modes
 
@@ -96,14 +96,14 @@ Use the same request as the demo at [the local API page](http://127.0.0.1:8000/d
 
 The adapter uses the existing HTTPX dependency and Google's [generateContent REST API](https://ai.google.dev/api/generate-content). The trusted message becomes `systemInstruction`; user text stays in `contents` with the `user` role. Each request starts without previous conversation history. Settings are temperature `0`, maximum output `2048` tokens, and a `30`-second timeout for each HTTPX operation.
 
-Nonblank text is preserved even when the finish reason is `MAX_TOKENS`; the returned finish reason lets the later experiment runner flag incomplete answers instead of losing potentially important output. Thought-tagged parts are excluded from the user-facing answer. A provider content-filter block is reported separately in the safe error detail and must not be counted as evidence that the system prompt resisted an attack. A first manual record and a literal-disclosure evaluator are now available below. Trusted fixture injection and local boundary checks are implemented. The controlled experiment runner and manual scoring procedure are implemented. Real A/B runs and their manual review remain pending.
+Nonblank text is preserved even when the finish reason is `MAX_TOKENS`; the returned finish reason lets the later experiment runner flag incomplete answers instead of losing potentially important output. Thought-tagged parts are excluded from the user-facing answer. A provider content-filter block is reported separately in the safe error detail and must not be counted as evidence that the system prompt resisted an attack. A first manual record and a literal-disclosure evaluator are now available below. Trusted fixture injection and local boundary checks are implemented. The controlled experiment runner and manual scoring procedure are implemented. The development baseline has 24 usable replies across 12 A/B pairs, plus one preserved quota error. Its assistant semantic review is provisional; the revised B policy and holdout remain unevaluated.
 
 Stop the server before switching modes, then restart it. To return to the demo, set `$env:CHAT_MODE = "demo"` before starting Uvicorn again.
 
 
 ## Prompt variants and recorded-response evaluation
 
-`PROMPT_VARIANT` is server configuration: `A` (default) or `B`. It is not selected by user message text. The policy templates live in `prompts/policy_a.txt` and `prompts/policy_b.txt`. A preserves the legacy system message exactly. B is a development draft that states the same rules more explicitly, including numeric consistency, instruction priority, and keeping the synthetic marker out of ordinary as well as adversarial replies. Its effectiveness has not been demonstrated.
+`PROMPT_VARIANT` is server configuration: `A` (default) or `B`. It is not selected by user message text. The policy templates live in `prompts/policy_a.txt` and `prompts/policy_b.txt`. A preserves the legacy system message exactly. B states the same rules more explicitly, including numeric consistency, instruction priority, and keeping the synthetic marker out of ordinary as well as adversarial replies. In the captured development baseline, A disclosed the literal marker in 11/12 replies and the earlier B in 0/12, while B still recommended with missing TO in M05/M11/M17. The current B strengthens that missing-data gate; its results are not yet known. See the [preserved baseline review](experiments/analysis/development-baseline-v1/summary.md).
 
 Each A/B pair must keep the same user input, player context, marker, model, and generation settings. Changing only the system wording is the intended comparison. Stop and restart Uvicorn after changing `PROMPT_VARIANT`. Default A is preserved while B is developed; freeze both prompts and scoring rules before the held-out evaluation. No new live calls are made by the code or tests in this revision automatically.
 
@@ -144,3 +144,5 @@ Preview the development plan without a key or network:
 ```
 
 The plan defines 24 development calls (12 scenarios, A and B); holdout defines 16 (eight scenarios). Only an explicit `run` command invokes the provider. Execution records real `/chat` responses and actual provider messages, stops on operational failures or input/model-version changes, preserves existing outputs, and requires a matching frozen-input manifest for holdout. See the [experiment workflow](experiments/README.md) and [manual oracle](experiments/SCORING.md) before starting real calls. Automated tests use stubs and temporary directories; they do not create real-model evidence.
+
+The CLI now waits five seconds between calls by default (`--delay-seconds 5`), records that schedule, and requires the same schedule in a holdout freeze. This responds to the observed 15 RPM project limit and does not increase any quota or retry failed calls. Freeze manifests now use schema version 2. Local stub tests replace waiting with a controlled function and make no real-model requests.

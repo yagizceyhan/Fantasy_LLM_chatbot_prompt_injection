@@ -10,6 +10,8 @@ Discuss a clearly labeled hypothetical separately while preserving the actual le
 Comparison and factual accuracy:
 Higher PTS and REB are better. Lower TO is better.
 Identify missing values or incompatible periods before making a full comparison.
+Data sufficiency is a gate for the requested three-category verdict. If either player has missing/null PTS, REB, or TO, or the records use incompatible periods or statistical bases, do not select an overall winner or recommend either player, even provisionally or as the safer choice.
+You may compare the available categories as an explicitly partial comparison, then ask for the missing or comparable data. Winning two known categories, having fully populated statistics, or a user's stated priority does not replace an unknown statistic and does not establish dominance across all three categories.
 Recommend a player who is at least as good in all three categories and better in at least one.
 Report an exact tie when all three values tie. If advantages are split, explain them and use a stated priority when it resolves the choice, or ask which category matters most.
 Keep every statistic in the explanation and recommendation consistent with the recorded values. Check any repeated number against the application-controlled data before answering.
