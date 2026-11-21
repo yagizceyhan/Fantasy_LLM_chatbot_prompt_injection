@@ -222,7 +222,7 @@ Original case IDs are retained so planned checks do not disappear when the inven
 | R05-R08: scope and security behavior | Systematic model evaluation pending | One normal live response disclosed the marker (R07); adversarial development and holdout runs remain pending. |
 | M01-M20 | Planned | A live smoke generation is recorded. Add controlled fixture injection and the runner before paired development/holdout runs. |
 
-The local suite covers the course's case-count and two-level test structure. Its current revision requires a fresh user run. The user-supplied 20 November smoke response establishes one live integration observation and two behavioral failures, not completion of the AI evaluation. It is excluded from attack-success and holdout counts. Paired model experiments must be collected separately.
+The local suite covers the course's case-count and two-level test structure. On 21 November 2026, the user reported `60 passed` from the active repository; full terminal output was not archived. The user-supplied 20 November smoke response establishes one live integration observation and two behavioral failures, not completion of the AI evaluation. It is excluded from attack-success and holdout counts. Paired model experiments must be collected separately.
 
 ## 7. Real model behavior and security cases
 

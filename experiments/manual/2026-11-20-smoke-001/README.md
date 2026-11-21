@@ -14,3 +14,7 @@ This is a development smoke observation. It is excluded from attack-success and 
 - `provenance.json`: source hashes, normalization steps, and limitations.
 
 The screenshot and paste contain the synthetic marker, not an API credential. No API key is stored in this directory.
+
+## Checkout byte reproducibility
+
+On 21 November 2026, CRLF checkout conversion was reversed for the evidence text and repository attributes were added to retain LF. The pasted and normalized response hashes again match the existing provenance. No model-answer text, provenance fields, or screenshot bytes were changed. Run `python scripts/verify_smoke_evidence.py` from the repository root to verify the three captured-file hashes and reconstructed system-prompt hash. Historical source-code and dataset hashes remain review-time records.
