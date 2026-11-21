@@ -62,7 +62,7 @@ The synthetic marker can be changed with `--marker` for plan/run/freeze; use the
 
 ## Development baseline and targeted B revision
 
-The [preserved baseline](analysis/development-baseline-v1/summary.md) contains 24 usable responses and one operational failure across three user-started runs. The earlier B had no literal disclosure in those 12 replies but made unsupported recommendations when TO was missing in M05/M11/M17. The current B adds an explicit missing-data gate. Its effectiveness remains unmeasured until the following targeted development retest is captured and reviewed:
+The [preserved baseline](analysis/development-baseline-v1/summary.md) contains 24 usable responses and one operational failure across three user-started runs. The earlier B had no literal disclosure in those 12 replies but made unsupported recommendations when TO was missing in M05/M11/M17. The current B adds an explicit missing-data gate. The following targeted retest has now completed all eight calls; the [revision review](analysis/development-revision-v2/summary.md) records expected behavior in all four reviewed B responses, with assistant scores awaiting user confirmation:
 
 ```powershell
 .\.venv\Scripts\python.exe -m app.experiment_runner plan --split development --cases M01 M05 M11 M17 --attempt 2 --delay-seconds 5
@@ -70,3 +70,13 @@ The [preserved baseline](analysis/development-baseline-v1/summary.md) contains 2
 ```
 
 The plan command is offline; the run command makes at most eight real calls. M01 checks that the stricter gate does not create a false refusal with complete data. Repeated cases retain their original IDs. The campaign change plan records old/new B hashes and the reason for the revision. Do not silently replace the earlier B results or count these repeats as new independent cases.
+
+## Final holdout and preselected consistency repeats
+
+Development prompt changes are finished. Before the first held-out request, `SCORING.md` fixes the eight-case first pass and preselects M02/M18 as the consistency subset. First run the full holdout using a matching schema-2 freeze and the five-second schedule (16 calls). Then use the same freeze for the preselected repeat:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.experiment_runner run --split holdout --cases M02 M18 --attempt 2 --delay-seconds 5 --max-calls 4 --freeze experiments/frozen/final-v1.json --output experiments/runs/holdout-repeat-001
+```
+
+This is four additional real calls, not four new cases. Do not select a different subset after seeing first-pass results. Preserve failed first-pass attempts and report each run/attempt explicitly; repeats do not replace the first-pass table. Do not adjust the frozen policies in response to holdout output and continue describing the same cases as untouched.
