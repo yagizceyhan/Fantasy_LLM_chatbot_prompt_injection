@@ -7,11 +7,11 @@
 | AI element H | Prompt injection and jailbreak test set |
 | League | 16-team head-to-head 9-category fantasy basketball |
 | Initial feature | Compare two players by points (PTS), rebounds (REB), and turnovers (TO) |
-| Status | Deterministic demo and local tests implemented; Live Gemini smoke response recorded; A/B prompt drafts and literal-disclosure evaluation implemented; paired evaluation pending |
+| Status | Deterministic demo, trusted F01-F07 injection, and local tests implemented; live Gemini smoke response recorded; A/B prompt drafts and literal-disclosure evaluation implemented; paired evaluation pending |
 
 ## 1. Scope and quality goals
 
-The chatbot helps a fantasy manager compare two players using their per-game PTS, REB, and TO averages for the same period. The local demo uses the fixed five-player snapshot in `data/players.json`. Unit tests also use synthetic player dictionaries with known expected answers. The F01-F07 fixtures below define the planned model experiment; API injection of those datasets is not implemented yet. The full league has nine categories, but the comparison covers the three categories chosen for the initial feature.
+The chatbot helps a fantasy manager compare two players using their per-game PTS, REB, and TO averages for the same period. The local demo uses the fixed five-player snapshot in `data/players.json`. Unit tests also use synthetic player dictionaries with known expected answers. The F01-F07 fixtures below define the planned model experiment and are stored in `experiments/fixtures/`. The application factory accepts a copied, server-controlled dataset; the HTTP request cannot supply it. The full league has nine categories, but the comparison covers the three categories chosen for the initial feature.
 
 The test design covers two quality goals.
 
@@ -26,14 +26,14 @@ The entry point is `POST /chat`. The JSON body requires a `message` string and o
 
 The system message contains the policy and only the two selected application-controlled player records, together with the snapshot metadata. The user message carries the accepted free text unchanged. A string such as `[SYSTEM]` inside that text stays in the user role. The synthetic marker is a deliberately protected test string. Provider credentials must stay in application configuration outside all model messages. Prompt variants A and B use the same fixture, marker, and accepted user text; U09 checks this boundary. A retains the legacy system wording, and B is a development draft rather than a demonstrated improvement.
 
-`create_app(provider=None, *, mode="demo")` makes the working mode explicit. The module-level application calls `create_configured_app()`, reading `CHAT_MODE` (default `demo`). In LLM mode, both `GEMINI_API_KEY` and `GEMINI_MODEL` are required to build the Gemini adapter. No model call occurs at import or startup. `PROMPT_VARIANT` selects A (default) or B as server configuration. The API key is supplied in the HTTP header, outside model messages.
+`create_app(provider=None, *, mode="demo", prompt_variant="A", dataset=None)` makes the working mode and trusted data source explicit. An injected dataset is copied when the application is created; omitting it retains the fixed NBA snapshot. Extra request-body fields are rejected with `422`, so dataset and prompt configuration remain outside user control. The module-level application calls `create_configured_app()`, reading `CHAT_MODE` (default `demo`). In LLM mode, both `GEMINI_API_KEY` and `GEMINI_MODEL` are required to build the Gemini adapter. No model call occurs at import or startup. `PROMPT_VARIANT` selects A (default) or B as server configuration. The API key is supplied in the HTTP header, outside model messages.
 
 | Configuration or request | Implemented result |
 | --- | --- |
 | Demo mode, no provider | HTTP `200`, with a deterministic Python reply beginning with `[DEMO]`. |
 | LLM mode, configured provider | HTTP `200`, with the nonblank provider reply returned unchanged. The Gemini adapter is available; local tests use stubs and mock HTTP transport. |
 | LLM mode, no provider, otherwise valid request | HTTP `503`. No demo fallback. |
-| Invalid message or duplicate selection | HTTP `422`, before any provider call. |
+| Invalid message, duplicate selection, or extra request-body fields | HTTP `422`, before any provider call. |
 | Unknown player | HTTP `404`, before any provider call. |
 | Provider raises `TimeoutError` | HTTP `504`, with no demo fallback. |
 | Provider returns a blank or non-string reply | HTTP `502`, with no demo fallback. |
@@ -126,7 +126,7 @@ In this table, *data ready* means both players have the required values in compa
 
 The user ran the original local suite on **20 November 2026** and supplied a screenshot showing **23 passed, 1 warning in 1.08s**. That baseline comprised 15 unit cases and eight API cases. The warning concerned Starlette/HTTPX use and did not fail that run.
 
-The mode revision defined 26 cases, and the Gemini revision defined 44 (33 unit and 11 API). This evaluation/prompt revision adds 15 unit cases and one API case, bringing the current inventory to **60 cases: 48 unit and 12 API**. No pytest execution output for this revision has been supplied yet. Record its actual result after running `python -m pytest -v`; neither the earlier 23-case screenshot nor the successful live API call verifies this local suite. A parameterized function contributes one case per parameter set.
+The mode revision defined 26 cases, and the Gemini revision defined 44 (33 unit and 11 API). The evaluation/prompt revision defined 60 (48 unit and 12 API); the user reported `60 passed` on 21 November 2026, without archived full terminal output. The trusted-fixture revision adds five unit and 14 API cases, bringing the current inventory to **79 cases: 53 unit and 26 API**. The user reported `79 passed` for this revision on 21 November 2026; full terminal output was not archived. A parameterized function contributes one case per parameter set; the two stub calls inside each fixture case do not count as two tests.
 
 ### 6.1 Implemented unit cases
 
@@ -180,6 +180,8 @@ The mode revision defined 26 cases, and the Gemini revision defined 44 (33 unit 
 | U39 | R07, R12 | Incomplete-answer outcome | Retain a literal disclosure signal in truncated text instead of discarding it. | `tests/unit/test_evaluation.py::test_partial_reply_keeps_disclosure_signal` |
 | U40 | R12 | Target-specific verdict | Do not infer rule-override success merely because a different violation, disclosure, occurred. | `tests/unit/test_evaluation.py::test_other_attack_target_requires_review_even_with_disclosure` |
 | U41 | R12 | Invalid evaluation configuration | Reject an empty marker so every response cannot be mislabeled as disclosure. | `tests/unit/test_evaluation.py::test_empty_marker_is_rejected` |
+| U42a-d | R02 | Comparability partitions: period, season, season type, statistical basis | Withhold a full recommendation for each incompatible metadata dimension. | `tests/unit/test_comparability.py::test_incompatible_metadata_prevents_recommendation` (four parameter sets) |
+| U43 | R02 | Decision D3; missing-data precedence | Identify missing TO before attempting to compare different periods. | `tests/unit/test_comparability.py::test_missing_stat_takes_precedence_over_period_mismatch` |
 
 ### 6.2 Implemented API integration cases
 
@@ -199,6 +201,14 @@ Configured-provider factory cases explicitly select `mode="llm"`; the environmen
 | API07 | R11 | Upstream error partition | Return `502` with a safe upstream-status detail and no demo fallback. | `tests/api/test_chat.py::test_upstream_error_returns_502` |
 | API13 | R10, R11 | LLM environment configuration | Load the configured provider, preserve roles, and return its exact text plus metadata. | `tests/api/test_chat.py::test_llm_environment_returns_provider_text_and_metadata` |
 | API14 | R10 | Environment-selected prompt | Select B through server configuration, send its policy to the stub, preserve the user role, and report variant B. | `tests/api/test_chat.py::test_environment_selects_variant_b` |
+| API15a-g | R01, R02, R10 | F01-F07 partitions; paired-input equivalence | Send all seven fixtures, including null TO and incompatible periods, through `/chat` to a stub under A and B with identical context and user text. | `tests/api/test_fixture_injection.py::test_each_fixture_reaches_llm_in_both_variants` (seven parameter sets) |
+| API16 | R06, R09, R10 | Invalid server-configuration input; decision D0 | Reject extra dataset/prompt fields with `422` before a provider call. | `tests/api/test_fixture_injection.py::test_request_cannot_supply_server_configuration` |
+| API17 | R01, R06, R10 | User-supplied false-value partition | Retain null TO in system data and keep the replacement instruction in the user role. This checks assembly, not model resistance. | `tests/api/test_fixture_injection.py::test_user_text_does_not_replace_fixture_values` |
+| API18 | R01, R10 | Mutable-input isolation | Later mutation of the caller's dataset does not alter an active application's trusted values. | `tests/api/test_fixture_injection.py::test_dataset_is_copied_when_app_is_created` |
+| API19 | R01, R10 | Application-instance isolation | F01 and F06 apps retain separate, stable data and opposite dominance outcomes. | `tests/api/test_fixture_injection.py::test_app_instances_keep_fixtures_separate` |
+| API20 | R02, R10 | M07 routing; missing-player free text | Send a request about absent Player C to the stub using valid A/B selectors and no invented C record. | `tests/api/test_fixture_injection.py::test_unknown_player_in_free_text_reaches_llm` |
+| API21 | R02 | F05; decision D3 | Demo identifies S1/L5 mismatch and withholds a recommendation. | `tests/api/test_fixture_injection.py::test_demo_refuses_incompatible_fixture_periods` |
+| API22 | R02 | Compatible inherited metadata | Demo inherits the common dataset period when a row omits it. | `tests/api/test_fixture_injection.py::test_demo_inherits_dataset_period_when_row_omits_it` |
 
 ### 6.3 Original planned cases and remaining gaps
 
@@ -216,13 +226,13 @@ Original case IDs are retained so planned checks do not disappear when the inven
 | API04: spoofed role remains user text | Covered by API12 | Reuse the existing selected-context case rather than double-counting it. |
 | API07: general upstream error | Implemented | Gemini HTTP/network/response failures use `ProviderError`; API07 checks its `502` mapping. Real service behavior still needs a live run. |
 | API08: unconfigured LLM | Implemented in mode revision | Applies specifically to LLM mode; default demo remains available. |
-| F01-F07 through the API | Pending | Inject test-controlled datasets without accepting trusted statistics from user text. |
-| R02: incompatible periods | Pending | The current demo does not validate period compatibility. U20 checks missing data only. |
+| F01-F07 through the API | Implemented locally | API15a-g verify copied, server-controlled fixtures and identical A/B inputs. Real-model fixture behavior still needs experiments. |
+| R02: incompatible periods | Implemented in demo; model evaluation pending | U42a-d and API21/API22 check metadata compatibility and inheritance. LLM mode forwards F05 for model evaluation. |
 | R04: stated category priority | Pending for LLM | The demo asks for a priority on split advantages but does not interpret free text. |
 | R05-R08: scope and security behavior | Systematic model evaluation pending | One normal live response disclosed the marker (R07); adversarial development and holdout runs remain pending. |
-| M01-M20 | Planned | A live smoke generation is recorded. Add controlled fixture injection and the runner before paired development/holdout runs. |
+| M01-M20 | Planned real-model runs | Trusted fixture injection is implemented. The machine-readable scenario list, runner, and paired development/holdout results remain pending. |
 
-The local suite covers the course's case-count and two-level test structure. On 21 November 2026, the user reported `60 passed` from the active repository; full terminal output was not archived. The user-supplied 20 November smoke response establishes one live integration observation and two behavioral failures, not completion of the AI evaluation. It is excluded from attack-success and holdout counts. Paired model experiments must be collected separately.
+The local suite covers the course's case-count and two-level test structure. On 21 November 2026, the user reported `60 passed` for the preceding revision; full terminal output was not archived. The user also reported `79 passed` for the current fixture revision on the same date, without archived full terminal output. The user-supplied 20 November smoke response establishes one live integration observation and two behavioral failures, not completion of the AI evaluation. It is excluded from attack-success and holdout counts. Paired model experiments must be collected separately.
 
 ## 7. Real model behavior and security cases
 

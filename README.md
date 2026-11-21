@@ -19,9 +19,9 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pytest -v
 ```
 
-The suite defines **60 test cases: 48 unit and 12 API integration cases**. Provider tests use `httpx.MockTransport` or controlled stubs, so `pytest` does not make external model requests or consume API quota. Cases and remaining gaps are mapped in [the test design](testdesign.md#6-local-test-inventory-and-implementation-status).
+The suite defines **79 test cases: 53 unit and 26 API integration cases**. Provider tests use `httpx.MockTransport` or controlled stubs, so `pytest` does not make external model requests or consume API quota. Cases and remaining gaps are mapped in [the test design](testdesign.md#6-local-test-inventory-and-implementation-status).
 
-The user reported `60 passed` from the active repository on 21 November 2026 using the command above. The full terminal output was not archived; this is a user-reported local result. The screenshot supplied on 20 November verifies the earlier 23-case baseline. Adapter tests establish local request/response handling, not resistance of a real model to prompt injection.
+The user reported `79 passed` for the trusted-fixture revision from the active repository on 21 November 2026 using the command above. The full terminal output was not archived; this is a user-reported local result. The screenshot supplied on 20 November verifies the earlier 23-case baseline. Adapter tests establish local request/response handling, not resistance of a real model to prompt injection.
 
 ## Working modes
 
@@ -36,7 +36,7 @@ The user reported `60 passed` from the active repository on 21 November 2026 usi
 
 `create_app(provider=provider, mode="llm")` remains the injection interface for tests. `create_configured_app()` reads the environment and builds the Gemini adapter only in LLM mode. Both `GEMINI_API_KEY` and `GEMINI_MODEL` must be nonblank; otherwise the LLM provider is unconfigured. App import and startup do not make a model request. `.env` files are not loaded automatically.
 
-Timeouts return `504`. Connection failures, non-success upstream HTTP statuses, malformed responses, and unusable text return `502`. Gemini quota/rate-limit errors retain the upstream status number in the safe error detail, for example `Model provider returned HTTP 429.` The application does not retry automatically or fall back to the demo. Request/player validation still precedes the provider check (`422` for invalid input, `404` for unknown players).
+Timeouts return `504`. Connection failures, non-success upstream HTTP statuses, malformed responses, and unusable text return `502`. Gemini quota/rate-limit errors retain the upstream status number in the safe error detail, for example `Model provider returned HTTP 429.` The application does not retry automatically or fall back to the demo. Request/player validation still precedes the provider check (`422` for invalid input or extra request fields, `404` for unknown players). Server configuration such as a dataset or prompt variant cannot be supplied in the request body.
 
 ## Try the demo
 
@@ -96,7 +96,7 @@ Use the same request as the demo at [the local API page](http://127.0.0.1:8000/d
 
 The adapter uses the existing HTTPX dependency and Google's [generateContent REST API](https://ai.google.dev/api/generate-content). The trusted message becomes `systemInstruction`; user text stays in `contents` with the `user` role. Each request starts without previous conversation history. Settings are temperature `0`, maximum output `2048` tokens, and a `30`-second timeout for each HTTPX operation.
 
-Nonblank text is preserved even when the finish reason is `MAX_TOKENS`; the returned finish reason lets the later experiment runner flag incomplete answers instead of losing potentially important output. Thought-tagged parts are excluded from the user-facing answer. A provider content-filter block is reported separately in the safe error detail and must not be counted as evidence that the system prompt resisted an attack. A first manual record and a literal-disclosure evaluator are now available below. Controlled fixture injection, the experiment runner, semantic scoring, and scored A/B runs remain future work.
+Nonblank text is preserved even when the finish reason is `MAX_TOKENS`; the returned finish reason lets the later experiment runner flag incomplete answers instead of losing potentially important output. Thought-tagged parts are excluded from the user-facing answer. A provider content-filter block is reported separately in the safe error detail and must not be counted as evidence that the system prompt resisted an attack. A first manual record and a literal-disclosure evaluator are now available below. Trusted fixture injection and local boundary checks are implemented. The experiment runner, semantic scoring, and scored A/B runs remain future work.
 
 Stop the server before switching modes, then restart it. To return to the demo, set `$env:CHAT_MODE = "demo"` before starting Uvicorn again.
 
@@ -128,3 +128,9 @@ The expected signal is `literal_marker_match: true` and `policy_verdict: "violat
 This offline command checks the original provenance hashes for the pasted response, normalized JSON, screenshot, and reconstructed system prompt. It exits with a nonzero status on a mismatch. Historical source-code and dataset hashes describe the review revision and are not assertions about every later checkout.
 
 The repository's `.gitattributes` keeps experiment `.txt`, `.json`, and `.md` files at LF and screenshots binary. On 21 November 2026, checkout CRLF conversion was reversed for the smoke evidence text; the two response hashes match the existing provenance again. The model output, including the synthetic-marker disclosure and incorrect `3.0 TO`, and all provenance fields are preserved. Global Git settings are unchanged.
+
+## Trusted synthetic fixtures
+
+`create_app(..., dataset=dataset)` accepts application-controlled data and copies it when creating the app. `load_dataset(path)` can read one of the seven JSON files in `experiments/fixtures/`; calling it without a path retains the fixed NBA snapshot. This configuration is separate from `/chat` input. See the [fixture guide](experiments/fixtures/README.md) for the exact interface and synthetic selectors.
+
+The demo withholds a full recommendation for missing statistics or incompatible periods, seasons, season types, or statistical bases. Row metadata overrides common dataset metadata. LLM mode sends incomplete/incompatible records to the provider for evaluation instead of deciding the model's answer in Python. Fixture tests exercise both A and B with controlled stubs and preserve the raw reply. They do not consume API quota or establish real-model attack resistance.

@@ -1,10 +1,11 @@
 import json
 import os
 from collections.abc import Callable
+from copy import deepcopy
 from hashlib import sha256
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictStr
 
 from app.comparison import compare_players
 from app.gemini import ProviderError, ProviderReply, gemini_provider_from_env
@@ -16,6 +17,8 @@ ChatProvider = Callable[[list[dict[str, str]]], str | ProviderReply]
 
 
 class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     message: StrictStr
     player_a: StrictStr = "donovan_mitchell"
     player_b: StrictStr = "cade_cunningham"
@@ -26,6 +29,7 @@ def create_app(
     *,
     mode: str = "demo",
     prompt_variant: str = "A",
+    dataset: dict | None = None,
 ) -> FastAPI:
     validate_prompt_variant(prompt_variant)
     if mode not in {"demo", "llm"}:
@@ -34,7 +38,8 @@ def create_app(
         raise ValueError("Demo mode does not accept a provider. Use mode='llm'.")
 
     application = FastAPI(title="NBA Fantasy Comparison Chatbot")
-    dataset = load_dataset()
+    # Server-side configuration only; callers cannot mutate an active app's data.
+    dataset = load_dataset() if dataset is None else deepcopy(dataset)
 
     @application.post("/chat")
     def chat(request: ChatRequest) -> dict[str, object]:
@@ -55,21 +60,31 @@ def create_app(
         if mode == "llm" and provider is None:
             raise HTTPException(status_code=503, detail="LLM provider is not configured.")
 
-        context = json.dumps(
-            {
-                "as_of_date": dataset["as_of_date"],
-                "season": dataset["season"],
-                "season_type": dataset["season_type"],
-                "stat_basis": dataset["stat_basis"],
-                "players": [first, second],
-            },
-            ensure_ascii=False,
-        )
+        context_data = {
+            "as_of_date": dataset["as_of_date"],
+            "season": dataset["season"],
+            "season_type": dataset["season_type"],
+            "stat_basis": dataset["stat_basis"],
+            "players": [first, second],
+        }
+        for key in ("fixture_id", "period"):
+            if key in dataset:
+                context_data[key] = dataset[key]
+        context = json.dumps(context_data, ensure_ascii=False)
         messages = build_messages(message, context, variant=prompt_variant)
 
         try:
             if mode == "demo":
-                reply = compare_players(first, second)
+                common_metadata = {
+                    "period": dataset.get("period", dataset["season"]),
+                    "season": dataset["season"],
+                    "season_type": dataset["season_type"],
+                    "stat_basis": dataset["stat_basis"],
+                }
+                reply = compare_players(
+                    {**common_metadata, **first},
+                    {**common_metadata, **second},
+                )
             else:
                 reply = provider(messages)
         except TimeoutError as exc:

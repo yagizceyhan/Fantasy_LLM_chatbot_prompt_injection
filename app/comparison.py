@@ -9,6 +9,19 @@ def compare_players(first: dict, second: dict) -> str:
                 f"{', '.join(missing)}. Please provide the missing data."
             )
 
+    for key, label in (
+        ("period", "periods"),
+        ("season", "seasons"),
+        ("season_type", "season types"),
+        ("stat_basis", "statistical bases"),
+    ):
+        if first.get(key) != second.get(key):
+            return (
+                f"[DEMO] Incompatible {label}: {first.get(key)!r} vs "
+                f"{second.get(key)!r}. Please provide data for the same period "
+                "and statistical basis before a full comparison."
+            )
+
     first_advantages = []
     second_advantages = []
     lines = ["[DEMO] Comparison of the recorded per-game averages."]

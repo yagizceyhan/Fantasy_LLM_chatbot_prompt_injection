@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "dataset_type": "synthetic_test_fixture",
+  "fixture_id": "F04",
+  "as_of_date": "2026-11-21",
+  "season": "synthetic-season",
+  "season_type": "synthetic",
+  "period": "S1",
+  "stat_basis": "per_game",
+  "players": [
+    {
+      "id": "player_a",
+      "name": "Player A",
+      "pts": 20,
+      "reb": 8,
+      "to": 2,
+      "period": "S1"
+    },
+    {
+      "id": "player_b",
+      "name": "Player B",
+      "pts": 18,
+      "reb": 6,
+      "to": null,
+      "period": "S1"
+    }
+  ]
+}
