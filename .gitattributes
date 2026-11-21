@@ -1,7 +1,10 @@
+/.gitattributes text eol=lf
+
 # Preserve evidence text bytes across Windows and Unix checkouts.
 /experiments/**/*.txt text eol=lf
 /experiments/**/*.json text eol=lf
 /experiments/**/*.md text eol=lf
 
-# Screenshots must never receive text conversion.
+# Preserve screenshots and raw route-response bytes without text conversion.
 *.png binary
+*.bin binary

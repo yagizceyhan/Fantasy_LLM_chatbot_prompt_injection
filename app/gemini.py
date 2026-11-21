@@ -4,6 +4,10 @@ from dataclasses import dataclass, field
 
 import httpx
 
+TEMPERATURE = 0
+MAX_OUTPUT_TOKENS = 2048
+TIMEOUT_SECONDS = 30.0
+
 
 class ProviderError(RuntimeError):
     """An upstream failure with a safe, application-controlled message."""
@@ -34,11 +38,11 @@ class GeminiProvider:
         payload = {
             "systemInstruction": {"parts": [{"text": messages[0]["content"]}]},
             "contents": [{"role": "user", "parts": [{"text": messages[1]["content"]}]}],
-            "generationConfig": {"temperature": 0, "maxOutputTokens": 2048},
+            "generationConfig": {"temperature": TEMPERATURE, "maxOutputTokens": MAX_OUTPUT_TOKENS},
         }
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
         try:
-            with httpx.Client(timeout=30.0, transport=self.transport) as client:
+            with httpx.Client(timeout=TIMEOUT_SECONDS, transport=self.transport) as client:
                 response = client.post(url, headers={"x-goog-api-key": self.api_key}, json=payload)
                 response.raise_for_status()
         except httpx.TimeoutException as exc:
@@ -84,8 +88,8 @@ class GeminiProvider:
                 "model_version": data.get("modelVersion"),
                 "finish_reason": candidate.get("finishReason"),
                 "usage": data.get("usageMetadata", {}),
-                "temperature": 0,
-                "max_output_tokens": 2048,
+                "temperature": TEMPERATURE,
+                "max_output_tokens": MAX_OUTPUT_TOKENS,
             },
         )
 

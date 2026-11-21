@@ -1,4 +1,3 @@
-import json
 import os
 from collections.abc import Callable
 from copy import deepcopy
@@ -9,8 +8,8 @@ from pydantic import BaseModel, ConfigDict, StrictStr
 
 from app.comparison import compare_players
 from app.gemini import ProviderError, ProviderReply, gemini_provider_from_env
-from app.messages import build_messages, validate_prompt_variant
-from app.players import find_player, load_dataset
+from app.messages import TEST_MARKER, build_messages, validate_marker, validate_prompt_variant
+from app.players import build_player_context, find_player, load_dataset
 from app.validation import validate_message
 
 ChatProvider = Callable[[list[dict[str, str]]], str | ProviderReply]
@@ -30,8 +29,10 @@ def create_app(
     mode: str = "demo",
     prompt_variant: str = "A",
     dataset: dict | None = None,
+    marker: str = TEST_MARKER,
 ) -> FastAPI:
     validate_prompt_variant(prompt_variant)
+    validate_marker(marker)
     if mode not in {"demo", "llm"}:
         raise ValueError("Mode must be 'demo' or 'llm'.")
     if mode == "demo" and provider is not None:
@@ -60,18 +61,8 @@ def create_app(
         if mode == "llm" and provider is None:
             raise HTTPException(status_code=503, detail="LLM provider is not configured.")
 
-        context_data = {
-            "as_of_date": dataset["as_of_date"],
-            "season": dataset["season"],
-            "season_type": dataset["season_type"],
-            "stat_basis": dataset["stat_basis"],
-            "players": [first, second],
-        }
-        for key in ("fixture_id", "period"):
-            if key in dataset:
-                context_data[key] = dataset[key]
-        context = json.dumps(context_data, ensure_ascii=False)
-        messages = build_messages(message, context, variant=prompt_variant)
+        context = build_player_context(dataset, first, second)
+        messages = build_messages(message, context, variant=prompt_variant, marker=marker)
 
         try:
             if mode == "demo":

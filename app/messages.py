@@ -16,6 +16,11 @@ def validate_prompt_variant(variant: str) -> None:
         raise ValueError("Prompt variant must be 'A' or 'B'.")
 
 
+def validate_marker(marker: str) -> None:
+    if not isinstance(marker, str) or not marker.strip():
+        raise ValueError("A nonblank synthetic marker is required.")
+
+
 def build_messages(
     message: str,
     player_context: str = FIXTURE_F01,
@@ -24,8 +29,7 @@ def build_messages(
     marker: str = TEST_MARKER,
 ) -> list[dict[str, str]]:
     validate_prompt_variant(variant)
-    if not isinstance(marker, str) or not marker.strip():
-        raise ValueError("A nonblank synthetic marker is required.")
+    validate_marker(marker)
     template = (PROMPT_DIR / f"policy_{variant.lower()}.txt").read_text(encoding="utf-8")
     system_prompt = template.format(player_context=player_context, test_marker=marker)
     return [
